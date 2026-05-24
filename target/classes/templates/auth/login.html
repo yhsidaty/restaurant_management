@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Connexion — Restaurant</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body class="login-page">
+<div class="login-card">
+    <div class="login-logo">
+        <div class="logo-icon">🍽️</div>
+        <h1>Restaurant</h1>
+        <p data-fr="Système de Gestion" data-en="Management System">Système de Gestion</p>
+    </div>
+
+    <div th:if="${error}" class="alert alert-danger">
+        ⚠️ <span th:text="${error}">Erreur</span>
+    </div>
+    <div th:if="${logout}" class="alert alert-success">
+        ✅ <span th:text="${logout}">Déconnecté</span>
+    </div>
+
+    <form th:action="@{/login}" method="post">
+        <div class="form-group">
+            <label data-fr="Nom d'utilisateur" data-en="Username">Nom d'utilisateur</label>
+            <input type="text" name="username" class="form-control" placeholder="manager / serveur / cuisiner" required autofocus/>
+        </div>
+        <div class="form-group">
+            <label data-fr="Mot de passe" data-en="Password">Mot de passe</label>
+            <input type="password" name="password" class="form-control" placeholder="••••••••" required/>
+        </div>
+        <button type="submit" class="btn btn-primary w-full" style="justify-content:center; padding:11px;">
+            <span data-fr="Se connecter" data-en="Sign In">Se connecter</span>
+        </button>
+    </form>
+
+    <div style="margin-top:24px; text-align:center;">
+        <div style="display:flex; justify-content:center; gap:8px; margin-top:10px;">
+            <button id="lang-fr" class="btn btn-sm lang-btn btn-accent" onclick="setLanguage('fr')">🇫🇷 Français</button>
+            <button id="lang-en" class="btn btn-sm lang-btn btn-primary" onclick="setLanguage('en')">🇬🇧 English</button>
+        </div>
+    </div>
+
+    <div style="margin-top:20px; padding:14px; background:var(--surface-alt); border-radius:8px; font-size:0.8rem; color:var(--text-muted);">
+        <strong>Compte par défaut:</strong><br/>
+        Manager: <code>manager</code> / <code>manager123</code>
+    </div>
+</div>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

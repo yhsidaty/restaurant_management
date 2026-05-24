@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Commandes — Manager</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h1>🍽️ Restaurant</h1>
+        <span class="role-badge">Manager</span>
+    </div>
+    <nav>
+        <a th:href="@{/manager/commandes}" class="active">
+            <span class="nav-icon">📋</span>
+            <span data-fr="Commandes" data-en="Orders">Commandes</span>
+        </a>
+        <a th:href="@{/manager/menu}">
+            <span class="nav-icon">🍴</span>
+            <span data-fr="Menu" data-en="Menu">Menu</span>
+        </a>
+        <a th:href="@{/manager/parametres}">
+            <span class="nav-icon">⚙️</span>
+            <span data-fr="Paramètres" data-en="Settings">Paramètres</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <strong sec:authentication="name">Manager</strong>
+            Manager
+        </div>
+        <a th:href="@{/logout}" class="btn-logout">🚪 <span data-fr="Déconnexion" data-en="Logout">Déconnexion</span></a>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+    <div class="page-header flex justify-between items-center">
+        <div>
+            <h2 data-fr="Tableau de Bord — Commandes" data-en="Dashboard — Orders">Tableau de Bord — Commandes</h2>
+            <p data-fr="Gérez toutes les commandes du restaurant" data-en="Manage all restaurant orders">Gérez toutes les commandes du restaurant</p>
+        </div>
+        <button class="btn btn-accent" onclick="openModal('modalAddCommande')">
+            ＋ <span data-fr="Nouvelle Commande" data-en="New Order">Nouvelle Commande</span>
+        </button>
+    </div>
+
+    <!-- Alerts -->
+    <div th:if="${success}" class="alert alert-success">✅ <span th:text="${success}"></span></div>
+    <div th:if="${error}"   class="alert alert-danger">⚠️ <span th:text="${error}"></span></div>
+
+    <!-- Stats -->
+    <div class="stat-cards">
+
+        <div class="stat-card">
+            <div class="stat-label">En Attente</div>
+            <div class="stat-value" th:text="${enAttenteCount}">0</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">En Cours</div>
+            <div class="stat-value" th:text="${enCoursCount}">0</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Done</div>
+            <div class="stat-value" th:text="${doneCount}">0</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Livré</div>
+            <div class="stat-value" th:text="${livreCount}">0</div>
+        </div>
+
+    </div>
+    <!-- Table -->
+    <div class="card">
+        <div class="card-header">
+            <h3 data-fr="Toutes les Commandes" data-en="All Orders">Toutes les Commandes</h3>
+            <span class="text-muted" th:text="${commandes.size()} + ' commande(s)'"></span>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th data-fr="Date" data-en="Date">Date</th>
+                    <th data-fr="Catégorie" data-en="Category">Catégorie</th>
+                    <th data-fr="Plat" data-en="Dish">Plat</th>
+                    <th data-fr="Statut" data-en="Status">Statut</th>
+                    <th data-fr="Table N°" data-en="Table No.">Table N°</th>
+                    <th data-fr="Actions" data-en="Actions">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="cmd : ${commandes}">
+                    <td><strong th:text="'#' + ${cmd.id}"></strong></td>
+                    <td th:text="${#temporals.format(cmd.date,'dd/MM/yyyy HH:mm')}"></td>
+                    <td th:text="${cmd.plat != null ? cmd.plat.category.name : '—'}"></td>
+                    <td th:text="${cmd.plat != null ? cmd.plat.name : '—'}"></td>
+                    <td>
+                        <span th:classappend="${cmd.status.name() == 'EN_ATTENTE' ? 'badge-waiting' :
+                                              (cmd.status.name() == 'EN_COURS'  ? 'badge-cooking' :
+                                              (cmd.status.name() == 'DONE'      ? 'badge-done'    : 'badge-livre'))}"
+                              class="badge" th:text="${cmd.status.label}"></span>
+                    </td>
+                    <td th:text="${cmd.tableNumber}"></td>
+                    <td>
+                        <form th:action="@{/manager/commandes/delete/{id}(id=${cmd.id})}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Supprimer cette commande ?')">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${commandes.isEmpty()}">
+                    <td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">
+                        Aucune commande pour le moment
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- MODAL — Ajouter Commande -->
+<div class="modal-overlay" id="modalAddCommande">
+    <div class="modal">
+        <div class="flex justify-between items-center mb-2">
+            <h3 data-fr="Nouvelle Commande" data-en="New Order">Nouvelle Commande</h3>
+            <button class="btn-close-modal" onclick="closeModal('modalAddCommande')">✕</button>
+        </div>
+        <form th:action="@{/manager/commandes/add}" method="post">
+            <div class="form-group">
+                <label data-fr="Plat" data-en="Dish">Plat</label>
+                <select name="platId" class="form-control" required>
+                    <option value="">— Choisir un plat —</option>
+                    <option th:each="p : ${plats}" th:value="${p.id}"
+                            th:text="${p.category.name + ' › ' + p.name + ' (' + p.price + ' €)'}"></option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label data-fr="Numéro de table" data-en="Table Number">Numéro de table</label>
+                <input type="number" name="tableNumber" class="form-control" min="1" max="50" required placeholder="Ex: 5"/>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-primary" onclick="closeModal('modalAddCommande')"
+                        data-fr="Annuler" data-en="Cancel">Annuler</button>
+                <button type="submit" class="btn btn-accent">
+                    ✅ <span data-fr="Créer" data-en="Create">Créer</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

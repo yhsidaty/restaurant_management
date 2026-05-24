@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Menu — Manager</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h1>🍽️ Restaurant</h1>
+        <span class="role-badge">Manager</span>
+    </div>
+    <nav>
+        <a th:href="@{/manager/commandes}">
+            <span class="nav-icon">📋</span>
+            <span data-fr="Commandes" data-en="Orders">Commandes</span>
+        </a>
+        <a th:href="@{/manager/menu}" class="active">
+            <span class="nav-icon">🍴</span>
+            <span data-fr="Menu" data-en="Menu">Menu</span>
+        </a>
+        <a th:href="@{/manager/parametres}">
+            <span class="nav-icon">⚙️</span>
+            <span data-fr="Paramètres" data-en="Settings">Paramètres</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <strong sec:authentication="name">Manager</strong>
+            Manager
+        </div>
+        <a th:href="@{/logout}" class="btn-logout">🚪 <span data-fr="Déconnexion" data-en="Logout">Déconnexion</span></a>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+    <div class="page-header flex justify-between items-center">
+        <div>
+            <h2 data-fr="Gestion du Menu" data-en="Menu Management">Gestion du Menu</h2>
+            <p data-fr="Gérez les catégories et les plats" data-en="Manage categories and dishes">Gérez les catégories et les plats</p>
+        </div>
+        <button class="btn btn-accent" onclick="openModal('modalAddCategory')">
+            ＋ <span data-fr="Nouvelle Catégorie" data-en="New Category">Nouvelle Catégorie</span>
+        </button>
+    </div>
+
+    <!-- Alerts -->
+    <div th:if="${success}" class="alert alert-success">✅ <span th:text="${success}"></span></div>
+    <div th:if="${error}"   class="alert alert-danger">⚠️ <span th:text="${error}"></span></div>
+
+    <!-- Search Bar -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form th:action="@{/manager/menu}" method="get" class="search-bar">
+                <input type="text" name="search" class="form-control"
+                       th:value="${searchQuery}"
+                       placeholder="🔍 Rechercher un plat par nom ou catégorie..." />
+                <button type="submit" class="btn btn-primary">
+                    <span data-fr="Rechercher" data-en="Search">Rechercher</span>
+                </button>
+                <a th:href="@{/manager/menu}" class="btn btn-primary" th:if="${searchQuery != null}">✕</a>
+            </form>
+
+            <!-- Search Results -->
+            <div th:if="${searchResults != null}" style="margin-top:16px;">
+                <p class="text-muted mb-2" th:text="'Résultats pour: ' + searchQuery"></p>
+                <div th:each="plat : ${searchResults}" class="plat-row">
+                    <div class="plat-info">
+                        <div class="plat-name" th:text="${plat.name}"></div>
+                        <div class="plat-desc" th:text="${plat.category.name + ' — ' + plat.description}"></div>
+                    </div>
+                    <div class="plat-price" th:text="${plat.price} + ' €'"></div>
+                    <form th:action="@{/manager/menu/plats/delete/{id}(id=${plat.id})}" method="post">
+                        <button type="submit" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Supprimer ce plat ?')">🗑️</button>
+                    </form>
+                </div>
+                <div th:if="${searchResults.isEmpty()}" class="text-muted" style="padding:10px 0;">Aucun plat trouvé.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories -->
+    <div th:each="cat : ${categories}" class="category-block">
+        <div class="category-header" th:onclick="'toggleCategory(' + ${cat.id} + ')'">
+            <h4>📂 <span th:text="${cat.name}"></span>
+                <span style="font-size:0.78rem;color:var(--text-muted);margin-left:8px;"
+                      th:text="'(' + ${cat.plats != null ? cat.plats.size() : 0} + ' plat(s))'"></span>
+            </h4>
+            <div style="display:flex;gap:8px;">
+                <button class="btn btn-accent btn-sm"
+                        th:onclick="'event.stopPropagation(); openModal(\'modalAddPlat' + ${cat.id} + '\')'">
+                    ＋ <span data-fr="Ajouter un plat" data-en="Add dish">Ajouter un plat</span>
+                </button>
+                <form th:action="@{/manager/menu/categories/delete/{id}(id=${cat.id})}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                            onclick="event.stopPropagation(); return confirm('Supprimer cette catégorie et tous ses plats ?')">🗑️</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="category-body" th:id="'cat-body-' + ${cat.id}">
+            <div th:each="plat : ${cat.plats}" class="plat-row">
+                <div class="plat-info">
+                    <div class="plat-name" th:text="${plat.name}"></div>
+                    <div class="plat-desc" th:text="${plat.description}"></div>
+                </div>
+                <div class="plat-price" th:text="${plat.price} + ' €'"></div>
+                <form th:action="@{/manager/menu/plats/delete/{id}(id=${plat.id})}" method="post">
+                    <button type="submit" class="btn btn-danger btn-sm"
+                            onclick="return confirm('Supprimer ce plat ?')">🗑️</button>
+                </form>
+            </div>
+            <div th:if="${cat.plats == null || cat.plats.isEmpty()}" class="text-muted" style="padding:10px 0; font-size:0.88rem;">
+                Aucun plat dans cette catégorie.
+            </div>
+        </div>
+
+        <!-- Modal Add Plat per Category -->
+        <div class="modal-overlay" th:id="'modalAddPlat' + ${cat.id}">
+            <div class="modal">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 data-fr="Ajouter un Plat" data-en="Add Dish">Ajouter un Plat</h3>
+                    <button class="btn-close-modal" th:onclick="'closeModal(\'modalAddPlat' + ${cat.id} + '\')'">✕</button>
+                </div>
+                <p class="text-muted mb-2" th:text="'Catégorie: ' + ${cat.name}"></p>
+                <form th:action="@{/manager/menu/plats/add}" method="post">
+                    <input type="hidden" name="categoryId" th:value="${cat.id}"/>
+                    <div class="form-group">
+                        <label data-fr="Nom du plat" data-en="Dish name">Nom du plat</label>
+                        <input type="text" name="name" class="form-control" required placeholder="Ex: Poulet Rôti"/>
+                    </div>
+                    <div class="form-group">
+                        <label data-fr="Description" data-en="Description">Description</label>
+                        <input type="text" name="description" class="form-control" placeholder="Ex: Avec légumes de saison"/>
+                    </div>
+                    <div class="form-group">
+                        <label data-fr="Prix (€)" data-en="Price (€)">Prix (€)</label>
+                        <input type="number" name="price" class="form-control" step="0.01" min="0" required placeholder="Ex: 14.50"/>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="btn btn-primary"
+                                th:onclick="'closeModal(\'modalAddPlat' + ${cat.id} + '\')'">Annuler</button>
+                        <button type="submit" class="btn btn-accent">✅ Ajouter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${categories.isEmpty()}" class="card">
+        <div class="card-body" style="text-align:center; padding:40px; color:var(--text-muted);">
+            Aucune catégorie. Créez-en une pour commencer.
+        </div>
+    </div>
+</main>
+
+<!-- MODAL — Ajouter Catégorie -->
+<div class="modal-overlay" id="modalAddCategory">
+    <div class="modal">
+        <div class="flex justify-between items-center mb-2">
+            <h3 data-fr="Nouvelle Catégorie" data-en="New Category">Nouvelle Catégorie</h3>
+            <button class="btn-close-modal" onclick="closeModal('modalAddCategory')">✕</button>
+        </div>
+        <form th:action="@{/manager/menu/categories/add}" method="post">
+            <div class="form-group">
+                <label data-fr="Nom de la catégorie" data-en="Category name">Nom de la catégorie</label>
+                <input type="text" name="name" class="form-control" required placeholder="Ex: Entrées, Plats, Desserts"/>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-primary" onclick="closeModal('modalAddCategory')">Annuler</button>
+                <button type="submit" class="btn btn-accent">✅ <span data-fr="Créer" data-en="Create">Créer</span></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Paramètres — Manager</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h1>🍽️ Restaurant</h1>
+        <span class="role-badge">Manager</span>
+    </div>
+    <nav>
+        <a th:href="@{/manager/commandes}">
+            <span class="nav-icon">📋</span>
+            <span data-fr="Commandes" data-en="Orders">Commandes</span>
+        </a>
+        <a th:href="@{/manager/menu}">
+            <span class="nav-icon">🍴</span>
+            <span data-fr="Menu" data-en="Menu">Menu</span>
+        </a>
+        <a th:href="@{/manager/parametres}" class="active">
+            <span class="nav-icon">⚙️</span>
+            <span data-fr="Paramètres" data-en="Settings">Paramètres</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <strong sec:authentication="name">Manager</strong>
+            Manager
+        </div>
+        <a th:href="@{/logout}" class="btn-logout">🚪 <span data-fr="Déconnexion" data-en="Logout">Déconnexion</span></a>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+    <div class="page-header">
+        <h2 data-fr="Paramètres" data-en="Settings">Paramètres</h2>
+        <p data-fr="Langue, mot de passe et gestion des utilisateurs" data-en="Language, password and user management">Langue, mot de passe et gestion des utilisateurs</p>
+    </div>
+
+    <!-- Alerts -->
+    <div th:if="${success}" class="alert alert-success">✅ <span th:text="${success}"></span></div>
+    <div th:if="${error}"   class="alert alert-danger">⚠️ <span th:text="${error}"></span></div>
+
+    <div class="grid-2 mb-4">
+        <!-- Language Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🌐 <span data-fr="Langue" data-en="Language">Langue</span></h3>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-2" data-fr="Choisissez la langue de l'interface" data-en="Choose the interface language">
+                    Choisissez la langue de l'interface
+                </p>
+                <div style="display:flex; gap:12px; margin-top:16px;">
+                    <button id="lang-fr" class="btn btn-accent lang-btn" onclick="setLanguage('fr')" style="flex:1; justify-content:center;">
+                        🇫🇷 Français
+                    </button>
+                    <button id="lang-en" class="btn btn-primary lang-btn" onclick="setLanguage('en')" style="flex:1; justify-content:center;">
+                        🇬🇧 English
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🔑 <span data-fr="Changer le mot de passe" data-en="Change Password">Changer le mot de passe</span></h3>
+            </div>
+            <div class="card-body">
+                <form th:action="@{/manager/parametres/password}" method="post">
+                    <div class="form-group">
+                        <label data-fr="Ancien mot de passe" data-en="Current password">Ancien mot de passe</label>
+                        <input type="password" name="oldPassword" class="form-control" required/>
+                    </div>
+                    <div class="form-group">
+                        <label data-fr="Nouveau mot de passe" data-en="New password">Nouveau mot de passe</label>
+                        <input type="password" name="newPassword" class="form-control" required minlength="6"/>
+                    </div>
+                    <button type="submit" class="btn btn-accent">
+                        🔄 <span data-fr="Modifier" data-en="Update">Modifier</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management -->
+    <div class="card">
+        <div class="card-header">
+            <h3>👥 <span data-fr="Gestion des Utilisateurs" data-en="User Management">Gestion des Utilisateurs</span></h3>
+            <button class="btn btn-accent btn-sm" onclick="openModal('modalAddUser')">
+                ＋ <span data-fr="Créer un compte" data-en="Create Account">Créer un compte</span>
+            </button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th data-fr="Nom complet" data-en="Full Name">Nom complet</th>
+                    <th data-fr="Nom d'utilisateur" data-en="Username">Nom d'utilisateur</th>
+                    <th data-fr="Rôle" data-en="Role">Rôle</th>
+                    <th data-fr="Actions" data-en="Actions">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="user : ${staff}">
+                    <td th:text="${user.fullName}"></td>
+                    <td><code th:text="${user.username}"></code></td>
+                    <td>
+                        <span th:classappend="${user.role.name() == 'SERVEUR' ? 'badge-cooking' : 'badge-done'}"
+                              class="badge" th:text="${user.role.name()}"></span>
+                    </td>
+                    <td>
+                        <form th:action="@{/manager/parametres/users/delete/{id}(id=${user.id})}" method="post" style="display:inline;">
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Supprimer cet utilisateur ?')">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${staff.isEmpty()}">
+                    <td colspan="4" style="text-align:center; padding:30px; color:var(--text-muted);">
+                        Aucun compte créé.
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<!-- MODAL — Créer Utilisateur -->
+<div class="modal-overlay" id="modalAddUser">
+    <div class="modal">
+        <div class="flex justify-between items-center mb-2">
+            <h3 data-fr="Créer un Utilisateur" data-en="Create User">Créer un Utilisateur</h3>
+            <button class="btn-close-modal" onclick="closeModal('modalAddUser')">✕</button>
+        </div>
+        <form th:action="@{/manager/parametres/users/add}" method="post">
+            <div class="form-group">
+                <label data-fr="Nom complet" data-en="Full Name">Nom complet</label>
+                <input type="text" name="fullName" class="form-control" required placeholder="Ex: Ahmed Diouf"/>
+            </div>
+            <div class="form-group">
+                <label data-fr="Nom d'utilisateur" data-en="Username">Nom d'utilisateur</label>
+                <input type="text" name="username" class="form-control" required placeholder="Ex: serveur1"/>
+            </div>
+            <div class="form-group">
+                <label data-fr="Mot de passe" data-en="Password">Mot de passe</label>
+                <input type="password" name="password" class="form-control" required minlength="6" placeholder="Min. 6 caractères"/>
+            </div>
+            <div class="form-group">
+                <label data-fr="Rôle" data-en="Role">Rôle</label>
+                <select name="role" class="form-control" required>
+                    <option value="SERVEUR">🛎️ Serveur</option>
+                    <option value="CUISINER">👨‍🍳 Cuisiner</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-primary" onclick="closeModal('modalAddUser')">Annuler</button>
+                <button type="submit" class="btn btn-accent">✅ <span data-fr="Créer" data-en="Create">Créer</span></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

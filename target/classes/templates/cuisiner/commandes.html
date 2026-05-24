@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Commandes — Cuisiner</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <style>
+        .cmd-card {
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 14px;
+        }
+        .cmd-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .cmd-card-title { font-weight: 700; font-size: 1rem; }
+        .cmd-meta { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+        .status-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+        .cmd-columns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .column-header { font-weight: 700; font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 10px 0; margin-bottom: 12px; border-bottom: 2px solid var(--border); }
+    </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h1>🍽️ Restaurant</h1>
+        <span class="role-badge" style="background:rgba(231,76,60,0.15);color:#e74c3c;">Cuisiner</span>
+    </div>
+    <nav>
+        <a th:href="@{/cuisiner/commandes}" class="active">
+            <span class="nav-icon">🔥</span>
+            <span data-fr="Commandes" data-en="Orders">Commandes</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <strong sec:authentication="name">Cuisiner</strong>
+            Cuisiner
+        </div>
+        <a th:href="@{/logout}" class="btn-logout">🚪 <span data-fr="Déconnexion" data-en="Logout">Déconnexion</span></a>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+    <div class="page-header flex justify-between items-center">
+        <div>
+            <h2 data-fr="Tableau de Cuisine" data-en="Kitchen Board">Tableau de Cuisine</h2>
+            <p data-fr="Gérez le statut de chaque commande" data-en="Manage status of each order">Gérez le statut de chaque commande</p>
+        </div>
+        <div style="font-size:0.85rem; color:var(--text-muted);">
+            🔄 <span data-fr="Rafraîchissez la page pour voir les nouvelles commandes" data-en="Refresh page to see new orders">Rafraîchissez la page pour voir les nouvelles commandes</span>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    <div th:if="${success}" class="alert alert-success">✅ <span th:text="${success}"></span></div>
+    <div th:if="${error}"   class="alert alert-danger">⚠️ <span th:text="${error}"></span></div>
+
+    <!-- Kanban-style columns -->
+    <div class="cmd-columns">
+
+        <!-- EN ATTENTE -->
+        <div>
+            <div class="column-header" style="color:var(--warning);">⏳ En Attente</div>
+            <div th:each="cmd : ${commandes}" th:if="${cmd.status.name() == 'EN_ATTENTE'}">
+                <div class="cmd-card" style="border-left:4px solid var(--warning);">
+                    <div class="cmd-card-header">
+                        <div>
+                            <div class="cmd-card-title" th:text="${cmd.plat != null ? cmd.plat.name : '—'}"></div>
+                            <div class="cmd-meta" th:text="'Table ' + ${cmd.tableNumber} + ' · #' + ${cmd.id}"></div>
+                            <div class="cmd-meta" th:text="${#temporals.format(cmd.date,'HH:mm')}"></div>
+                        </div>
+                        <span class="badge badge-waiting">En Attente</span>
+                    </div>
+                    <div th:if="${cmd.plat != null}" class="text-muted" style="font-size:0.82rem;" th:text="${cmd.plat.category.name}"></div>
+                    <div class="status-actions">
+                        <form th:action="@{/cuisiner/commandes/status/{id}(id=${cmd.id})}" method="post">
+                            <input type="hidden" name="status" value="EN_COURS"/>
+                            <button type="submit" class="btn btn-info btn-sm">
+                                🔥 <span data-fr="Démarrer" data-en="Start">Démarrer</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EN COURS -->
+        <div>
+            <div class="column-header" style="color:var(--info);">🔥 En Cours</div>
+            <div th:each="cmd : ${commandes}" th:if="${cmd.status.name() == 'EN_COURS'}">
+                <div class="cmd-card" style="border-left:4px solid var(--info);">
+                    <div class="cmd-card-header">
+                        <div>
+                            <div class="cmd-card-title" th:text="${cmd.plat != null ? cmd.plat.name : '—'}"></div>
+                            <div class="cmd-meta" th:text="'Table ' + ${cmd.tableNumber} + ' · #' + ${cmd.id}"></div>
+                            <div class="cmd-meta" th:text="${#temporals.format(cmd.date,'HH:mm')}"></div>
+                        </div>
+                        <span class="badge badge-cooking">En Cours</span>
+                    </div>
+                    <div class="status-actions">
+                        <form th:action="@{/cuisiner/commandes/status/{id}(id=${cmd.id})}" method="post">
+                            <input type="hidden" name="status" value="DONE"/>
+                            <button type="submit" class="btn btn-success btn-sm">
+                                ✅ <span data-fr="Terminer" data-en="Done">Terminer</span>
+                            </button>
+                        </form>
+                        <form th:action="@{/cuisiner/commandes/status/{id}(id=${cmd.id})}" method="post">
+                            <input type="hidden" name="status" value="EN_ATTENTE"/>
+                            <button type="submit" class="btn btn-primary btn-sm">↩️</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DONE -->
+        <div>
+            <div class="column-header" style="color:#1a5276;">✅ Done</div>
+            <div th:each="cmd : ${commandes}" th:if="${cmd.status.name() == 'DONE' || cmd.status.name() == 'LIVRE'}">
+                <div class="cmd-card" th:style="${cmd.status.name() == 'DONE' ? 'border-left:4px solid #1a5276' : 'border-left:4px solid var(--success); opacity:0.7'}">
+                    <div class="cmd-card-header">
+                        <div>
+                            <div class="cmd-card-title" th:text="${cmd.plat != null ? cmd.plat.name : '—'}"></div>
+                            <div class="cmd-meta" th:text="'Table ' + ${cmd.tableNumber} + ' · #' + ${cmd.id}"></div>
+                            <div class="cmd-meta" th:text="${#temporals.format(cmd.date,'HH:mm')}"></div>
+                        </div>
+                        <span th:classappend="${cmd.status.name() == 'DONE' ? 'badge-done' : 'badge-livre'}"
+                              class="badge" th:text="${cmd.status.label}"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- If no orders at all -->
+    <div th:if="${commandes.isEmpty()}" class="card" style="margin-top:20px;">
+        <div class="card-body" style="text-align:center; padding:50px; color:var(--text-muted);">
+            🍽️ Aucune commande en cours.
+        </div>
+    </div>
+</main>
+
+<script th:src="@{/js/main.js}"></script>
+<script>
+// Auto-refresh every 30 seconds for cuisiner
+setTimeout(() => location.reload(), 30000);
+</script>
+</body>
+</html>

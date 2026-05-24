@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="fr">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Commandes — Serveur</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+    <div class="sidebar-brand">
+        <h1>🍽️ Restaurant</h1>
+        <span class="role-badge" style="background:rgba(201,168,76,0.2);color:var(--accent);">Serveur</span>
+    </div>
+    <nav>
+        <a th:href="@{/serveur/commandes}" class="active">
+            <span class="nav-icon">📋</span>
+            <span data-fr="Mes Commandes" data-en="My Orders">Mes Commandes</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <strong sec:authentication="name">Serveur</strong>
+            Serveur
+        </div>
+        <a th:href="@{/logout}" class="btn-logout">🚪 <span data-fr="Déconnexion" data-en="Logout">Déconnexion</span></a>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main-content">
+    <div class="page-header flex justify-between items-center">
+        <div>
+            <h2 data-fr="Mes Commandes" data-en="My Orders">Mes Commandes</h2>
+            <p data-fr="Gérez vos commandes de table" data-en="Manage your table orders">Gérez vos commandes de table</p>
+        </div>
+        <button class="btn btn-accent" onclick="openModal('modalAddCommande')">
+            ＋ <span data-fr="Nouvelle Commande" data-en="New Order">Nouvelle Commande</span>
+        </button>
+    </div>
+
+    <!-- Alerts -->
+    <div th:if="${success}" class="alert alert-success">✅ <span th:text="${success}"></span></div>
+    <div th:if="${error}"   class="alert alert-danger">⚠️ <span th:text="${error}"></span></div>
+
+    <!-- Stats -->
+    <div class="stat-cards" style="grid-template-columns: repeat(3,1fr);">
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--warning-light);">⏳</div>
+            <div>
+                <div class="stat-label">En Attente</div>
+                <div class="stat-value" th:text="${enAttenteCount}">0</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--info-light);">🔥</div>
+            <div>
+                <div class="stat-label">En Cours / Done</div>
+                <div class="stat-value" th:text="${enCoursDoneCount}">0</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background:var(--success-light);">🍽️</div>
+            <div>
+                <div class="stat-label">Livré</div>
+                <div class="stat-value" th:text="${livreCount}">0</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+        <div class="card-header">
+            <h3 data-fr="Mes Commandes" data-en="My Orders">Mes Commandes</h3>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th data-fr="Date" data-en="Date">Date</th>
+                    <th data-fr="Catégorie" data-en="Category">Catégorie</th>
+                    <th data-fr="Plat" data-en="Dish">Plat</th>
+                    <th data-fr="Statut" data-en="Status">Statut</th>
+                    <th data-fr="Table N°" data-en="Table No.">Table N°</th>
+                    <th data-fr="Actions" data-en="Actions">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="cmd : ${commandes}">
+                    <td><strong th:text="'#' + cmd.id"></strong></td>
+                    <td th:text="${#temporals.format(cmd.date,'dd/MM HH:mm')}"></td>
+                    <td th:text="${cmd.plat != null ? cmd.plat.category.name : '—'}"></td>
+                    <td th:text="${cmd.plat != null ? cmd.plat.name : '—'}"></td>
+                    <td>
+                        <span th:classappend="${cmd.status.name() == 'EN_ATTENTE' ? 'badge-waiting' :
+                                              (cmd.status.name() == 'EN_COURS'  ? 'badge-cooking' :
+                                              (cmd.status.name() == 'DONE'      ? 'badge-done'    : 'badge-livre'))}"
+                              class="badge" th:text="${cmd.status.label}"></span>
+                    </td>
+                    <td th:text="${cmd.tableNumber}"></td>
+                    <td style="display:flex; gap:6px; flex-wrap:wrap;">
+                        <!-- Livrer (only when DONE) -->
+                        <form th:if="${cmd.status.name() == 'DONE'}"
+                              th:action="@{/serveur/commandes/livrer/{id}(id=${cmd.id})}" method="post">
+                            <button type="submit" class="btn btn-success btn-sm">
+                                🍽️ <span data-fr="Livrer" data-en="Deliver">Livrer</span>
+                            </button>
+                        </form>
+                        <!-- Delete (only EN_ATTENTE) -->
+                        <form th:if="${cmd.status.name() == 'EN_ATTENTE'}"
+                              th:action="@{/serveur/commandes/delete/{id}(id=${cmd.id})}" method="post">
+                            <button type="submit" class="btn btn-danger btn-sm"
+                                    onclick="return confirm('Supprimer cette commande ?')">🗑️</button>
+                        </form>
+                    </td>
+                </tr>
+                <tr th:if="${commandes.isEmpty()}">
+                    <td colspan="7" style="text-align:center; padding:30px; color:var(--text-muted);">
+                        Aucune commande. Créez-en une !
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+</main>
+
+<!-- MODAL — Ajouter Commande -->
+<div class="modal-overlay" id="modalAddCommande">
+    <div class="modal">
+        <div class="flex justify-between items-center mb-2">
+            <h3 data-fr="Nouvelle Commande" data-en="New Order">Nouvelle Commande</h3>
+            <button class="btn-close-modal" onclick="closeModal('modalAddCommande')">✕</button>
+        </div>
+        <form th:action="@{/serveur/commandes/add}" method="post">
+            <div class="form-group">
+                <label data-fr="Catégorie" data-en="Category">Catégorie</label>
+                <select id="catFilter" class="form-control" onchange="filterPlats()">
+                    <option value="">— Toutes les catégories —</option>
+                    <option th:each="cat : ${categories}" th:value="${cat.id}" th:text="${cat.name}"></option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label data-fr="Plat" data-en="Dish">Plat</label>
+                <select name="platId" id="platSelect" class="form-control" required>
+                    <option value="">— Choisir un plat —</option>
+                    <option th:each="p : ${plats}" th:value="${p.id}"
+                            th:attr="data-cat=${p.category.id}"
+                            th:text="${p.name + ' (' + p.price + ' €)'}"></option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label data-fr="Numéro de table" data-en="Table Number">Numéro de table</label>
+                <input type="number" name="tableNumber" class="form-control" min="1" max="50" required placeholder="Ex: 3"/>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-primary" onclick="closeModal('modalAddCommande')">Annuler</button>
+                <button type="submit" class="btn btn-accent">✅ Envoyer en cuisine</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/js/main.js}"></script>
+<script>
+function filterPlats() {
+    const catId = document.getElementById('catFilter').value;
+    const select = document.getElementById('platSelect');
+    Array.from(select.options).forEach(opt => {
+        if (!opt.value) return; // keep placeholder
+        opt.hidden = catId && opt.dataset.cat !== catId;
+    });
+    select.value = '';
+}
+</script>
+</body>
+</html>
